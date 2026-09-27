@@ -14,7 +14,6 @@ if str(BASE_DIR) not in sys.path:
 
 import streamlit as st
 import pandas as pd
-import plotly.figure_factory as ff
 import plotly.graph_objects as go
 
 from evaluation.evaluate import run_benchmark_evaluation
@@ -128,32 +127,49 @@ def render_evaluation_page() -> None:
     # -------------------------------------------------------------
     st.subheader("4. Confusion Matrices")
 
+    def build_cm_chart(cm_data, colorscale_name):
+        x_lbls = ["Predicted Normal", "Predicted Anomaly"]
+        y_lbls = ["Actual Normal", "Actual Anomaly"]
+        max_val = max(max(r) for r in cm_data) if cm_data else 1
+        ann = []
+        for i, row in enumerate(cm_data):
+            for j, val in enumerate(row):
+                ann.append(
+                    dict(
+                        x=x_lbls[j],
+                        y=y_lbls[i],
+                        text=f"<b>{val}</b>",
+                        showarrow=False,
+                        font=dict(color="white" if val > (max_val / 2) else "#1e293b", size=18)
+                    )
+                )
+        chart = go.Figure(
+            data=go.Heatmap(
+                z=cm_data,
+                x=x_lbls,
+                y=y_lbls,
+                colorscale=colorscale_name,
+                showscale=False
+            )
+        )
+        chart.update_layout(
+            height=280,
+            margin=dict(t=20, b=30, l=110, r=20),
+            annotations=ann,
+            yaxis=dict(autorange="reversed")
+        )
+        return chart
+
     c1, c2 = st.columns(2)
 
     with c1:
         st.markdown("#### Baseline QC Confusion Matrix")
-        base_cm = base_b["confusion_matrix"]
-        fig_cm1 = ff.create_annotated_heatmap(
-            z=base_cm,
-            x=["Predicted Normal", "Predicted Anomaly"],
-            y=["Actual Normal", "Actual Anomaly"],
-            colorscale="Blues",
-            showscale=False
-        )
-        fig_cm1.update_layout(height=280, margin=dict(t=30, b=30, l=80, r=30))
+        fig_cm1 = build_cm_chart(base_b["confusion_matrix"], "Blues")
         st.plotly_chart(fig_cm1, use_container_width=True)
 
     with c2:
         st.markdown("#### Proposed Pipeline Confusion Matrix")
-        prop_cm = prop_b["confusion_matrix"]
-        fig_cm2 = ff.create_annotated_heatmap(
-            z=prop_cm,
-            x=["Predicted Normal", "Predicted Anomaly"],
-            y=["Actual Normal", "Actual Anomaly"],
-            colorscale="Greens",
-            showscale=False
-        )
-        fig_cm2.update_layout(height=280, margin=dict(t=30, b=30, l=80, r=30))
+        fig_cm2 = build_cm_chart(prop_b["confusion_matrix"], "Greens")
         st.plotly_chart(fig_cm2, use_container_width=True)
 
     # -------------------------------------------------------------
