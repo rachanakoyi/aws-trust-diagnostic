@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  aws-trust-diagnostic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aws_trust_diagnostic
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - DATA_SOURCE=${DATA_SOURCE:-fallback}
+      - IMD_API_URL=${IMD_API_URL:-}
+      - IMD_API_KEY=${IMD_API_KEY:-}
+      - POLL_INTERVAL_SECONDS=${POLL_INTERVAL_SECONDS:-10}
+      - DEFAULT_STATION_ID=${DEFAULT_STATION_ID:-AWS_DELHI_001}
+      - DEMO_MODE=${DEMO_MODE:-true}
+    volumes:
+      # Persist SQLite database across container restarts
+      - ./database:/app/database
